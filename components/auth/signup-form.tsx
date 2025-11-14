@@ -14,6 +14,26 @@ export default function SignupForm({
   onBackClick,
   onSignupSuccess,
 }: SignupFormProps) {
+  // Prevent admin from using signup form
+  if (role === 'admin') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background flex flex-col items-center justify-center p-6">
+        <div className="max-w-md w-full space-y-4 text-center">
+          <h1 className="text-2xl font-bold text-foreground">Admin Registration Not Allowed</h1>
+          <p className="text-muted-foreground">
+            Administrator accounts cannot be created through public registration.
+          </p>
+          <button
+            onClick={onBackClick}
+            className="text-primary font-semibold hover:text-primary/80"
+          >
+            ← Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Route health workers to the specialized signup form
   if (role === 'health-worker') {
     return (
@@ -51,6 +71,9 @@ export default function SignupForm({
         throw new Error('Password must be at least 6 characters');
       }
 
+      // Ensure we never send admin role (double-check)
+      const signupRole = role === 'admin' ? 'patient' : role;
+      
       // Call MongoDB API for signup
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -58,7 +81,7 @@ export default function SignupForm({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          role,
+          role: signupRole, // Only patient or health-worker
           email,
           password,
         }),

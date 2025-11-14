@@ -28,6 +28,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // CRITICAL: Prevent admin from logging in through this regular endpoint
+    // Admins must use /api/admin/login
+    if (user.role === 'admin') {
+      return NextResponse.json(
+        { error: 'Administrators must use the admin login page at /admin/login' },
+        { status: 403 }
+      );
+    }
+
     // Check if role matches
     if (role && user.role !== role) {
       return NextResponse.json(

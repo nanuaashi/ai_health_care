@@ -13,6 +13,11 @@ export default function Home() {
   const [userRole, setUserRole] = useState<'patient' | 'health-worker' | 'admin' | null>(null);
 
   const handleRoleSelect = (role: 'patient' | 'health-worker' | 'admin') => {
+    // Admin users must use the dedicated admin login page
+    if (role === 'admin') {
+      window.location.href = '/admin/login';
+      return;
+    }
     setUserRole(role);
     setAuthStep('login');
   };
@@ -46,6 +51,11 @@ export default function Home() {
   }
 
   if (authStep === 'signup') {
+    // Prevent admin from accessing signup
+    if (userRole === 'admin') {
+      window.location.href = '/admin/login';
+      return null;
+    }
     return (
       <SignupForm
         role={userRole!}

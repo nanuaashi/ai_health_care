@@ -818,6 +818,21 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
         {activeTab === 'approvals' && (
           <div className="space-y-6">
+            {/* NMC Verification Link */}
+            <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-4">
+              <svg className="h-4 w-4 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              <a
+                href="https://www.nmc.org.in/information-desk/indian-medical-register/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-green-700 hover:text-green-800 underline hover:no-underline transition-colors"
+              >
+                Verify Doctor Credentials (NMC Registry)
+              </a>
+            </div>
+
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-foreground">Health Worker Applications</h2>
               <span className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-bold">

@@ -16,9 +16,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!['patient', 'health-worker', 'admin'].includes(role)) {
+    // CRITICAL: Reject admin role registration through this public endpoint
+    if (role === 'admin') {
       return NextResponse.json(
-        { error: 'Invalid role' },
+        { error: 'Admin registration not allowed through this endpoint' },
+        { status: 403 }
+      );
+    }
+
+    // Validate role (only patient and health-worker allowed)
+    if (!['patient', 'health-worker'].includes(role)) {
+      return NextResponse.json(
+        { error: 'Invalid role. Only patient and health-worker roles are allowed.' },
         { status: 400 }
       );
     }
@@ -117,9 +126,9 @@ export async function POST(request: NextRequest) {
         updatedAt: now,
       } as HealthWorker;
     } else {
-      // Admin (for future use)
+      // This should never be reached due to earlier validation, but keep as safety check
       return NextResponse.json(
-        { error: 'Admin registration not allowed through this endpoint' },
+        { error: 'Invalid role. Admin registration is not allowed.' },
         { status: 403 }
       );
     }

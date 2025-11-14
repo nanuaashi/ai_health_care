@@ -1,74 +1,54 @@
-import { useState, useRef } from 'react';
+'use client';
 
-interface Message {
-  id: string;
-  type: 'user' | 'ai';
-  text: string;
-  timestamp: Date;
-}
+import { useState, useRef, useEffect } from 'react';
+import { useGeminiChat, Message as ChatMessage } from '@/hooks/use-gemini-chat';
+import { LanguageSelector, type SupportedLanguage } from './language-selector';
 
 interface Chat {
   id: string;
   name: string;
-  messages: Message[];
+  messages: ChatMessage[];
   createdAt: Date;
 }
 
 export default function ChatInterface({ onBack }: { onBack?: () => void }) {
+  const { messages: hookMessages, isLoading, error, sendMessage, clearError } = useGeminiChat();
+  const [selectedLanguage, setSelectedLanguage] = useState<SupportedLanguage>('en-US');
+  
   const [chats, setChats] = useState<Chat[]>([
     {
       id: '1',
       name: 'New Chat',
-      messages: [
-        {
-          id: '1',
-          type: 'ai',
-          text: 'Hello! I\'m your AI health assistant. I\'m here to help you with health guidance, symptom information, and general wellness advice. How can I help you today?',
-          timestamp: new Date(),
-        },
-      ],
+      messages: hookMessages,
       createdAt: new Date(),
     },
   ]);
   const [activeChatId, setActiveChatId] = useState('1');
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeChat = chats.find((c) => c.id === activeChatId);
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
+  // Update active chat with latest messages from hook
+  useEffect(() => {
+    setChats((prev) =>
+      prev.map((chat) =>
+        chat.id === activeChatId
+          ? { ...chat, messages: hookMessages }
+          : chat
+      )
+    );
+  }, [hookMessages, activeChatId]);
 
-      const audioChunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
-      };
+  // Auto-scroll to bottom of messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [activeChat?.messages]);
 
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        // In production, send to speech-to-text API
-        setInput('(Voice message received - "I have a fever and cough")');
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.log('[v0] Microphone access denied:', error);
-      alert('Microphone access denied');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
-      setIsRecording(false);
-    }
+  const handleSendMessage = () => {
+    if (!input.trim()) return;
+    sendMessage(input);
+    setInput('');
   };
 
   const createNewChat = () => {
@@ -79,7 +59,7 @@ export default function ChatInterface({ onBack }: { onBack?: () => void }) {
         {
           id: '1',
           type: 'ai',
-          text: 'Hello! I\'m your AI health assistant. How can I help you today?',
+          text: "Hello! I'm your AI health assistant. I'm here to help you with health guidance, symptom information, and general wellness advice. How can I help you today?",
           timestamp: new Date(),
         },
       ],
@@ -98,49 +78,11 @@ export default function ChatInterface({ onBack }: { onBack?: () => void }) {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || !activeChat) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      text: input,
-      timestamp: new Date(),
-    };
-
-    setChats((prev) =>
-      prev.map((chat) =>
-        chat.id === activeChatId
-          ? { ...chat, messages: [...chat.messages, userMessage] }
-          : chat
-      )
-    );
-    setInput('');
-    setIsLoading(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'ai',
-        text: 'I understand your concern. Based on your description, I recommend monitoring your symptoms and staying hydrated. If symptoms persist beyond 48 hours, please consult a health worker or visit the nearest clinic.',
-        timestamp: new Date(),
-      };
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === activeChatId
-            ? { ...chat, messages: [...chat.messages, aiMessage] }
-            : chat
-        )
-      );
-      setIsLoading(false);
-    }, 1500);
-  };
-
   if (!activeChat) return null;
 
   return (
     <div className="flex h-[calc(100vh-200px)]">
+      {/* Sidebar */}
       <div className="w-64 bg-card border-r border-border flex flex-col">
         <div className="p-4 border-b border-border">
           {onBack && (
@@ -192,8 +134,9 @@ export default function ChatInterface({ onBack }: { onBack?: () => void }) {
         </div>
       </div>
 
+      {/* Chat Area */}
       <div className="flex-1 flex flex-col bg-card">
-        {/* Messages */}
+        {/* Messages Container */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {activeChat.messages.map((msg) => (
             <div
@@ -207,44 +150,89 @@ export default function ChatInterface({ onBack }: { onBack?: () => void }) {
                     : 'bg-muted text-foreground'
                 }`}
               >
-                <p className="text-sm">{msg.text}</p>
+                <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                <p className="text-xs mt-1 opacity-60">
+                  {msg.timestamp.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
               </div>
             </div>
           ))}
+
+          {/* Loading State */}
           {isLoading && (
             <div className="flex justify-start">
               <div className="px-4 py-3 bg-muted text-foreground rounded-lg">
-                <p className="text-sm">AI is typing...</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-foreground rounded-full animate-bounce"></div>
+                  <div
+                    className="w-2 h-2 bg-foreground rounded-full animate-bounce"
+                    style={{ animationDelay: '0.1s' }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-foreground rounded-full animate-bounce"
+                    style={{ animationDelay: '0.2s' }}
+                  ></div>
+                </div>
               </div>
             </div>
           )}
+
+          {/* Error State */}
+          {error && (
+            <div className="flex justify-start">
+              <div className="px-4 py-3 bg-destructive/10 text-destructive rounded-lg max-w-xs lg:max-w-md">
+                <p className="text-sm font-semibold">Error:</p>
+                <p className="text-sm">{error}</p>
+                <button
+                  onClick={clearError}
+                  className="text-xs mt-2 underline hover:no-underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="p-4 border-t border-border">
+        {/* Input Area */}
+        <div className="p-4 border-t border-border space-y-3">
+          {/* Language Selector */}
+          <div className="flex gap-2 items-center">
+            <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+              Language:
+            </span>
+            <LanguageSelector
+              value={selectedLanguage}
+              onChange={setSelectedLanguage}
+              disabled={isLoading}
+            />
+          </div>
+
+          {/* Text Input */}
           <div className="flex gap-3">
-            <input
-              type="text"
+            <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Ask me anything..."
-              className="flex-1 px-4 py-3 rounded-lg bg-background border-2 border-border text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              placeholder="Ask me anything about your health... (Shift+Enter for new line)"
+              disabled={isLoading}
+              rows={2}
+              className="flex-1 px-4 py-3 rounded-lg bg-background border-2 border-border text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none"
             />
-            <button
-              onClick={isRecording ? stopRecording : startRecording}
-              className={`px-4 py-3 rounded-lg font-bold transition-all ${
-                isRecording
-                  ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
-              }`}
-            >
-              {isRecording ? 'Stop' : 'Mic'}
-            </button>
             <button
               onClick={handleSendMessage}
               disabled={!input.trim() || isLoading}
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all self-end"
             >
               Send
             </button>
