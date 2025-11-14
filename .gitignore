@@ -39,3 +39,4 @@ test-*.js
 *-mongodb*.js
 *.md
 !README.md
+!SECURITY_FIX.md
