@@ -1,0 +1,8 @@
+[00:00:00.685] Server  LOG      ✓ Ready in 482ms
+[00:00:15.206] Server  WARN     ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[00:00:15.437] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:15.579] Browser LOG     %c[Vercel Web Analytics]%c Debug mode is enabled by default in development. No requests will be sent to the server. color: rgb(120, 120, 120) color: inherit
+[00:00:15.579] Browser LOG     %c[Vercel Web Analytics]%c Running queued event color: rgb(120, 120, 120) color: inherit pageview {"path":"/","route":"/"}
+[00:00:15.579] Browser LOG     %c[Vercel Web Analytics]%c [pageview] http://localhost:3000/ color: rgb(120, 120, 120) color: inherit {"dp":"/","o":"http://localhost:3000/","r":"","sdkn":"@vercel/analytics/next","sdkv":"1.5.0","sv":"0.1.3","ts":1763133751288}
+[00:10:10.871] Browser LOG     Health worker signup successful: {"message":"User created successfully","user":{"_id":"69174b8a6291a0c96c26a808","appliedDate":"2025-11-14T15:32:26.488Z","createdAt":"2025-11-14T15:32:26.488Z","district":"Bilaspur","email":"ankit@gmail.com","fullName":"Ankit Kumar","governmentIdFileName":"Screenshot 2025-11-14 at 8.49.13 PM.png","hospitalClinicName":"Rungta clinic","phoneNumber":"9988866342","proofFileName":"Screenshot 2025-11-14 at 8.01.21 PM.png","qualification":"MBBS","registrationNumber":"MCI-1234","role":"health-worker","specializedStream":"Gynecology","status":"pending","updatedAt":"2025-11-14T15:32:26.488Z","village":"Bilaspur City","yearsOfExperience":"5"}}
