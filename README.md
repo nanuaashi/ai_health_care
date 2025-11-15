@@ -810,8 +810,16 @@ Special thanks to the open-source community for incredible tools and libraries t
 
 ### Get in Touch
 - **Email:** deepak@ruralhealthcare.com
-- **GitHub:** [It-iandeepak](https://github.com/It-iandeepak)
-- **LinkedIn:** [https://www.linkedin.com/in/deepak-kumar-18999232b/]
+- - **GitHub:** [It-iandeepak](https://github.com/It-iandeepak)
+- - **LinkedIn:** https://www.linkedin.com/in/deepak-kumar-18999232b/
+- - **Email:** ankit26548k@gmail.com
+- - **GitHub:** (https://github.com/ankit-kumar-developer-122)
+- - **LinkedIn:** (https://www.linkedin.com/in/ankit-kumar-developer122)
+- - - **Email:** abhishekkumar98954@gmail.com
+- - **GitHub:** (https://github.com/XoABHI)
+- - **LinkedIn:** (https://www.linkedin.com/in/abhishek-kumar-b99449226)
+    
+
 
 ### Support & Issues
 - **Bug Reports:** [GitHub Issues](https://github.com/It-iandeepak/ai-health-continuity/issues)
