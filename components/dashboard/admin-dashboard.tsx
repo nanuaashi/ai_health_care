@@ -106,6 +106,10 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [pendingWorkersList, setPendingWorkersList] = useState<PendingWorker[]>([]);
   const [selectedWorker, setSelectedWorker] = useState<PendingWorker | null>(null);
   const [denialReason, setDenialReason] = useState('');
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isExportingData, setIsExportingData] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   // Refresh pending workers list when approvals tab is active
   useEffect(() => {
@@ -191,7 +195,17 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
   const handleApproveWorker = async (worker: PendingWorker) => {
     try {
-      const response = await fetch(`/api/auth/health-workers/${worker._id || worker.id}`, {
+      const workerId = worker._id || worker.id;
+      
+      if (!workerId) {
+        console.error('Worker ID is missing:', worker);
+        alert('Error: Worker ID not found. Please refresh and try again.');
+        return;
+      }
+
+      console.log('🔍 Approving worker:', { workerId, fullName: worker.fullName });
+
+      const response = await fetch(`/api/auth/health-workers/${workerId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -201,18 +215,24 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         }),
       });
 
+      console.log('📡 API Response Status:', response.status);
+
+      const responseData = await response.json();
+      console.log('📡 API Response Data:', responseData);
+
       if (!response.ok) {
-        throw new Error('Failed to approve worker');
+        throw new Error(responseData?.error || `HTTP ${response.status}: Failed to approve worker`);
       }
 
       // Refresh the list
       const updatedList = await loadPendingWorkers();
       setPendingWorkersList(updatedList);
       setSelectedWorker(null);
-      alert(`${worker.fullName} has been approved and can now login!`);
+      alert(`✅ ${worker.fullName} has been approved and can now login!`);
     } catch (error) {
-      console.error('Error approving worker:', error);
-      alert('Failed to approve worker. Please try again.');
+      console.error('❌ Error approving worker:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to approve worker: ${errorMessage}`);
     }
   };
 
@@ -223,7 +243,17 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     }
 
     try {
-      const response = await fetch(`/api/auth/health-workers/${worker._id || worker.id}`, {
+      const workerId = worker._id || worker.id;
+      
+      if (!workerId) {
+        console.error('Worker ID is missing:', worker);
+        alert('Error: Worker ID not found. Please refresh and try again.');
+        return;
+      }
+
+      console.log('🔍 Denying worker:', { workerId, fullName: worker.fullName, denialReason });
+
+      const response = await fetch(`/api/auth/health-workers/${workerId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -234,8 +264,13 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         }),
       });
 
+      console.log('📡 API Response Status:', response.status);
+
+      const responseData = await response.json();
+      console.log('📡 API Response Data:', responseData);
+
       if (!response.ok) {
-        throw new Error('Failed to deny worker');
+        throw new Error(responseData?.error || `HTTP ${response.status}: Failed to deny worker`);
       }
 
       // Refresh the list
@@ -243,10 +278,96 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       setPendingWorkersList(updatedList);
       setSelectedWorker(null);
       setDenialReason('');
-      alert(`Application denied for ${worker.fullName}`);
+      alert(`✅ Application denied for ${worker.fullName}`);
     } catch (error) {
-      console.error('Error denying worker:', error);
-      alert('Failed to deny worker. Please try again.');
+      console.error('❌ Error denying worker:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to deny worker: ${errorMessage}`);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    setIsGeneratingReport(true);
+    setReportError(null);
+    try {
+      console.log('📊 Generating health report...');
+      const response = await fetch('/api/admin/generate-report');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to generate report (${response.status})`);
+      }
+
+      // Get the HTML blob
+      const blob = await response.blob();
+      
+      // Create a new window with the HTML content
+      const htmlContent = await blob.text();
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(htmlContent);
+        newWindow.document.close();
+        
+        // Give the browser a moment to render, then trigger print/save as PDF
+        setTimeout(() => {
+          newWindow.print();
+        }, 250);
+      }
+      
+      // Also save the HTML file as backup
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `health-report-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('✅ Health report generated successfully');
+      alert('✅ Health report generated! Use the print dialog (Ctrl+P or Cmd+P) to save as PDF.\nYou can also find the HTML file in your Downloads folder.');
+    } catch (error) {
+      console.error('❌ Error generating report:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setReportError(errorMessage);
+      alert(`Failed to generate report: ${errorMessage}`);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    setIsExportingData(true);
+    setExportError(null);
+    try {
+      console.log('📥 Exporting data...');
+      const response = await fetch('/api/admin/export-data');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to export data (${response.status})`);
+      }
+
+      // Get the CSV blob
+      const blob = await response.blob();
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `health-data-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('✅ Data exported successfully');
+      alert('✅ Data exported successfully!');
+    } catch (error) {
+      console.error('❌ Error exporting data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setExportError(errorMessage);
+      alert(`Failed to export data: ${errorMessage}`);
+    } finally {
+      setIsExportingData(false);
     }
   };
 
@@ -292,11 +413,19 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button className="p-4 bg-primary text-primary-foreground rounded-lg font-bold hover:bg-primary/90 active:scale-95">
-                Generate Report
+              <button 
+                onClick={handleGenerateReport}
+                disabled={isGeneratingReport}
+                className="p-4 bg-primary text-primary-foreground rounded-lg font-bold hover:bg-primary/90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {isGeneratingReport ? '⏳ Generating...' : '📄 Generate Report'}
               </button>
-              <button className="p-4 bg-secondary text-secondary-foreground rounded-lg font-bold hover:bg-secondary/90 active:scale-95">
-                Export Data
+              <button 
+                onClick={handleExportData}
+                disabled={isExportingData}
+                className="p-4 bg-secondary text-secondary-foreground rounded-lg font-bold hover:bg-secondary/90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {isExportingData ? '⏳ Exporting...' : '📥 Export Data'}
               </button>
               <button
                 onClick={() => setActiveTab('approvals')}
@@ -305,6 +434,18 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 Approvals ({pendingWorkersList.length})
               </button>
             </div>
+            
+            {reportError && (
+              <div className="p-4 bg-destructive/10 border-2 border-destructive rounded-lg">
+                <p className="text-sm text-destructive">❌ Report Error: {reportError}</p>
+              </div>
+            )}
+            
+            {exportError && (
+              <div className="p-4 bg-destructive/10 border-2 border-destructive rounded-lg">
+                <p className="text-sm text-destructive">❌ Export Error: {exportError}</p>
+              </div>
+            )}
 
             <div>
               <h2 className="text-lg font-bold text-foreground mb-4">Recent Alerts</h2>
@@ -973,7 +1114,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   </div>
                 ) : (
                   pendingWorkersList.map((worker) => (
-                    <div key={worker.id} className="p-4 bg-card border-2 border-border rounded-lg">
+                    <div key={worker._id || worker.id} className="p-4 bg-card border-2 border-border rounded-lg">
                       <div className="flex items-start justify-between">
                         <div>
                           <h4 className="font-bold text-foreground text-lg">
