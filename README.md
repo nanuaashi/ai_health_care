@@ -811,11 +811,7 @@ Special thanks to the open-source community for incredible tools and libraries t
 - **Feature Requests:** [GitHub Discussions](https://github.com/It-iandeepak/ai-health-continuity/discussions)
 - **Documentation:** Check [Wiki](https://github.com/It-iandeepak/ai-health-continuity/wiki)
 
-### Quick Links
-- 🌐 [Project Repository](https://github.com/It-iandeepak/ai-health-continuity)
-- 📖 [Documentation](./docs)
-- 🐛 [Report Issues](https://github.com/It-iandeepak/ai-health-continuity/issues)
-- 💬 [Discussions](https://github.com/It-iandeepak/ai-health-continuity/discussions)
+
 
 ---
 
